@@ -12,7 +12,7 @@ class ToolServiceProvider extends ServiceProvider
     {
         $this->publishes([
             __DIR__ . '/../config/nova-resource-click.php' => config_path('nova-resource-click.php'),
-        ]);
+        ], 'config');
 
         Nova::serving(function (ServingNova $event) {
             Nova::script('nova-resource-click', __DIR__ . '/../dist/js/nova-resource-click.js');
