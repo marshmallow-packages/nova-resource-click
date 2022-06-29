@@ -1,0 +1,38 @@
+{
+  "name": "marshmallow/nova-resource-click",
+  "description": "This Laravel Nova package allows you to reorder models in a Nova resource's index view using drag & drop.",
+  "keywords": [
+    "laravel",
+    "nova",
+    "eloquent-sortable",
+    "marshmallow"
+  ],
+  "license": "MIT",
+  "require": {
+    "php": "^8.0",
+    "laravel/nova": "^4.0"
+  },
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://nova.laravel.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Marshmallow\\NovaResourceClick\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Marshmallow\\NovaResourceClick\\ToolServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
