@@ -1,28 +1,22 @@
 # Nova Sortable
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/marshmallow/nova-sortable.svg?style=flat-square)](https://packagist.org/packages/marshmallow/nova-sortable)
-[![Total Downloads](https://img.shields.io/packagist/dt/marshmallow/nova-sortable.svg?style=flat-square)](https://packagist.org/packages/marshmallow/nova-sortable)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/marshmallow/nova-resource-click.svg?style=flat-square)](https://packagist.org/packages/marshmallow/nova-resource-click)
+[![Total Downloads](https://img.shields.io/packagist/dt/marshmallow/nova-resource-click.svg?style=flat-square)](https://packagist.org/packages/marshmallow/nova-resource-click)
 
-This [Laravel Nova](https://nova.laravel.com) package allows you to reorder models in a Nova resource's index view using drag & drop.
-
-Uses Spatie's [eloquent-sortable](https://github.com/spatie/eloquent-sortable) under the hood.
+This [Laravel Nova](https://nova.laravel.com) package allows you to define the click action on a Nova resource's index row.
 
 ## Requirements
 
-- `php: >=7.3`
-- `laravel/nova: ^3.0`
+- `php: >=8.0`
+- `laravel/nova: ^4.0`
 
 ## Features
 
-- Drag & drop reorder (on either Index view or HasMany view)
-- BelongsTo/MorphsTo reorder support w/ pivot tables
-- Move to start and end arrows (makes item first/last)
-- Everything from [eloquent-sortable](https://github.com/spatie/eloquent-sortable)
-- Localization
+- Define the action of the click on the index page of the Resource Table row
 
 ## Screenshots
 
-![Sortable](./docs/sortable.gif)
+![ResourceClick](./resource-click.gif)
 
 ## Installation
 
@@ -30,199 +24,83 @@ Install the package in a Laravel Nova project via Composer:
 
 ```bash
 # Install package
-composer require marshmallow/nova-sortable
+composer require marshmallow/nova-resource-click
+```
+
+## Config
+
+Publish the config file with
+
+```bash
+php artisan vendor:publish --provider="Marshmallow\NovaResourceClick\ToolServiceProvider" --tag="config"
+```
+
+This is the default content of the config file:
+
+```php
+
+  return [
+
+      /**
+       * Default action for all resources when click is applied;
+       */
+      'default' => 'view',
+  ];
+
 ```
 
 ## Usage
 
-### Create migration
+When the resource does not have a click action configuratored, the default action will be used: 'view' .
 
-Add an order field to the model using Laravel migrations:
+Note: This package extends the default `TableResourceRow` component from Laravel Nova. Any other package that overwrites this component may cause this package to break.
 
-```php
-// Add order column to the model
-Schema::table('some_model', function (Blueprint $table) {
-  $table->integer('sort_order');
-});
+### Add the row click action to Nova resource
 
-// Set default sort order (just copy ID to sort order)
-DB::statement('UPDATE some_model SET sort_order = id');
-```
-
-### Implement eloquent-sortable
-
-Implement the Spatie's `eloquent-sortable` interface and apply the trait:
+To apply the 'clickAction' on the individual Resource by adding the `HasClickAction` trait and adding the `$clickAction` variable.
 
 ```php
-use Spatie\EloquentSortable\Sortable;
-use Spatie\EloquentSortable\SortableTrait;
 
-class SomeModel extends Eloquent implements Sortable
-{
-  use SortableTrait;
-
-  public $sortable = [
-    'order_column_name' => 'sort_order',
-    'sort_when_creating' => true,
-  ];
-
-  ...
-}
-```
-
-When the model does not have a sortable configuration, the default eloquent-sortable configuration will be used.
-
-### Apply HasSortableRows to Nova resource
-
-Apply `HasSortableRows` trait from this package on the Resource:
-
-```php
-use Marshmallow\NovaResourceClick\Traits\HasSortableRows;
+use Marshmallow\NovaResourceClick\Traits\HasClickAction;
 
 class MyResource extends Resource
 {
-  use HasSortableRows;
+  use HasClickAction;
+
+  public static $clickAction = 'update';  // Options: view, update, select, ignore
 
   ...
 }
 ```
 
-NB! This overrides the `indexQuery()` method.
-
-### Disallowing sorting on a per-request/resource basis
-
-You can disable sorting on a per-request or per-resource basis by overriding the `canSort()` on the Resource method like so:
+Or by using use the `additionalInformation` feature:
 
 ```php
-public static function canSort(NovaRequest $request, $resource)
+
+class MyResource extends Resource
 {
-  // Do whatever here, ie:
-  // return user()->isAdmin();
-  // return $resource->id !== 5;
-  return true;
-}
-```
 
-NB! This requires you to disable caching (see below).
-
-### Disabling caching
-
-If you want to disable caching due to using `canSort` or running tests, you can set `sortableCacheEnabled` to false on the resource that has the `HasSortableRows` trait. See the example below:
-
-```php
-class Artist extends Resource
-{
-    use HasSortableRows;
-
-    public static $sortableCacheEnabled = false;
-}
-```
-
-Or if you want to temporarily disable sortability cache (for tests), you can call `Resource::disableSortabilityCache()` on the resource.
-
-## Custom sortable options
-
-### Nova sorting order
-
-To sort your resource in a different order in Nova, you can set the `nova_order_by` flag to `DESC` (`ASC` by default) in the `$sortable` array.
-
-```php
-class SomeModel extends Eloquent implements Sortable
-{
-  use SortableTrait;
-
-  public $sortable = [
-    'order_column_name' => 'sort_order',
-    'sort_when_creating' => true,
-    'nova_order_by' => 'DESC',
-  ];
+  /**
+   * Get meta information about this resource for client side consumption.
+   *
+   * @param  \Illuminate\Http\Request  $request
+   * @return array<string, mixed>
+   */
+  public static function additionalInformation(Request $request)
+  {
+    return [
+        'clickAction' => 'update' // Options: view, update, select, ignore
+    ];
+  }
 
   ...
-}
-```
-
-### Ignoring policies
-
-If you have a resource that has `authorizedToUpdate` false, but you want the user to still be able to sort it, you can use the `ignore_policies` flag like so:
-
-```php
-class SomeModel extends Eloquent implements Sortable
-{
-  use SortableTrait;
-
-  public $sortable = [
-    'order_column_name' => 'sort_order',
-    'sort_when_creating' => true,
-    'ignore_policies' => true,
-  ];
-
-  ...
-}
-```
-
-## Sorting on HasMany relationship
-
-**NB!** The resource can only be sorted on **either** the Index view **or** the HasMany list view, but not both!
-
-Sorting on HasMany is simple. Add `'sort_on_has_many' => true` to the `$sortable` array on the model. Like so:
-
-```php
-public $sortable = [
-  'order_column_name' => 'sort_order',
-  'sort_when_creating' => true,
-  'sort_on_has_many' => true,
-];
-```
-
-The sort on has many configuration can be apply in a per model basis or it can be added in the eloquent-sortable configuration for all the models.
-
-```php
-return [
-
-    // Spatie sortable configuration
-
-    /**
-     * Add sort on has many in all the models.
-     **/
-    'sort_on_has_many' => true,
-];
-```
-
-## Sorting on ManyToMany relationships
-
-Sorting on BelongsToMany and MorphToMany relationships is available, but requires special steps.
-
-See the documentation here: [Sorting ManyToMany relationships (w/ pivot table)](docs/sorting/many-to-many.md).
-
-## Localization
-
-The translation file(s) can be published by using the following publish command:
-
-```bash
-php artisan vendor:publish --provider="Marshmallow\NovaResourceClick\ToolServiceProvider" --tag="translations"
-```
-
-You can add your translations to `resources/lang/vendor/nova-sortable/` by creating a new translations file with the locale name (ie `et.json`) and copying the JSON from the existing `en.json`.
-
-## Other usecases
-
-### Using indexQuery
-
-This package overwrites the `indexQuery` of the Resource and if you still want to use it, you can do it as follows:
-
-```php
-public static function indexQuery(NovaRequest $request, $query)
-{
-  // Do whatever with the query
-  // ie $query->withCount(['children', 'descendants', 'modules']);
-  return parent::indexQuery($request, HasSortableRows::indexQuery($request, $query));
 }
 ```
 
 ## Credits
 
-- [Tarvo Reinpalu](https://github.com/Tarpsvo)
+- [Lars Kort](https://github.com/ltkort)
 
 ## License
 
-Nova Sortable is open-sourced software licensed under the [MIT license](LICENSE.md).
+Nova Resource Click is open-sourced software licensed under the [MIT license](LICENSE.md).

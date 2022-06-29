@@ -4,36 +4,29 @@ namespace Marshmallow\NovaResourceClick;
 
 use Laravel\Nova\Nova;
 use Laravel\Nova\Events\ServingNova;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use OptimistDigital\NovaTranslationsLoader\LoadsNovaTranslations;
 
 class ToolServiceProvider extends ServiceProvider
 {
     public function boot()
     {
-        $this->app->booted(function () {
-            $this->routes();
-        });
+        $this->publishes([
+            __DIR__ . '/../config/nova-resource-click.php' => config_path('nova-resource-click.php'),
+        ]);
 
         Nova::serving(function (ServingNova $event) {
-            Nova::script('nova-resource-click', __DIR__ . '/../dist/js/tool.js');
+            Nova::script('nova-resource-click', __DIR__ . '/../dist/js/nova-resource-click.js');
+            Nova::provideToScript([
+                'ResourceClickDefault' => config('nova-resource-click.default', 'view'),
+            ]);
         });
     }
 
-    /**
-     * Register the tool's routes.
-     *
-     * @return void
-     */
-    protected function routes()
+    public function register()
     {
-        if ($this->app->routesAreCached()) return;
-
-        Route::middleware(['nova'])
-            ->prefix('nova-vendor/nova-resource-click')
-            ->domain(config('nova.domain', null))
-            ->namespace('\Marshmallow\NovaResourceClick\Http\Controllers')
-            ->group(__DIR__ . '/../routes/api.php');
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/nova-resource-click.php',
+            'nova-resource-click'
+        );
     }
 }

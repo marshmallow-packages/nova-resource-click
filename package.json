@@ -23,7 +23,6 @@
   "dependencies": {
     "@inertiajs/inertia": "^0.11.0",
     "vue": "^3.0",
-    "vue-draggable-next": "^2.1.1",
     "vuex": "^4.0.2"
   }
 }

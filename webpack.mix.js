@@ -3,7 +3,11 @@ let path = require('path');
 
 require('./mix');
 
-mix.setPublicPath('dist').js('resources/js/tool.js', 'js').vue({ version: 3 }).nova('marshmallow/nova-resource-click');
+mix
+  .setPublicPath('dist')
+  .js('resources/js/nova-resource-click.js', 'js')
+  .vue({ version: 3 })
+  .nova('marshmallow/nova-resource-click');
 
 mix.alias({
   'laravel-nova': path.join(__dirname, 'vendor/laravel/nova/resources/js/mixins/packages.js'),
