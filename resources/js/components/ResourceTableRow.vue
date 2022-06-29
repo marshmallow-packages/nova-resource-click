@@ -3,39 +3,28 @@
     :data-pivot-id="resource['id'].pivotValue"
     :dusk="resource['id'].value + '-row'"
     class="group"
-    @click.stop.prevent="navigateToDetail"
+    @click.stop.prevent="resourceClickAction"
   >
     <!-- Resource Selection Checkbox -->
-
     <td
-      v-if="shouldShowCheckboxes || canSeeReorderButtons"
+      v-if="shouldShowCheckboxes"
       :class="{
         'py-2': !shouldShowTight,
         'border-r': shouldShowColumnBorders,
         'border-t border-gray-100 dark:border-gray-700 px-2': true,
         'cursor-pointer': resource.authorizedToView,
       }"
-      class="td-fit pl-5 pr-5 dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-900"
+      class="pl-5 pr-5 td-fit dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-900"
       @click.stop
     >
-      <ReorderButtons
-        :resource="resource"
-        :relationship-type="relationshipType"
-        :via-resource-id="viaResourceId"
-        :via-relationship="viaRelationship"
-        :resource-name="resourceName"
-        @moveToEnd="$emit('moveToEnd')"
-        @moveToStart="$emit('moveToStart')"
-      >
-        <Checkbox
-          v-if="shouldShowCheckboxes"
-          :aria-label="__('Select Resource :title', { title: resource.title })"
-          :checked="checked"
-          :data-testid="`${testId}-checkbox`"
-          :dusk="`${resource['id'].value}-checkbox`"
-          @input="toggleSelection"
-        />
-      </ReorderButtons>
+      <Checkbox
+        v-if="shouldShowCheckboxes"
+        :aria-label="__('Select Resource :title', { title: resource.title })"
+        :checked="checked"
+        :data-testid="`${testId}-checkbox`"
+        :dusk="`${resource['id'].value}-checkbox`"
+        @input="toggleSelection"
+      />
     </td>
 
     <!-- Fields -->
@@ -70,9 +59,9 @@
         'border-t border-gray-100 dark:border-gray-700': true,
         'cursor-pointer': resource.authorizedToView,
       }"
-      class="px-2 td-fit text-right align-middle dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-900"
+      class="px-2 text-right align-middle td-fit dark:bg-gray-800 group-hover:bg-gray-50 dark:group-hover:bg-gray-900"
     >
-      <div class="flex items-center space-x-0 text-gray-400">
+      <div class="flex items-center justify-end space-x-0 text-gray-400">
         <InlineActionDropdown
           :actions="availableActions"
           :endpoint="actionsEndpoint"
@@ -93,7 +82,7 @@
             :data-testid="`${testId}-view-button`"
             :dusk="`${resource['id'].value}-view-button`"
             :href="$url(`/resources/${resourceName}/${resource['id'].value}`)"
-            class="toolbar-button hover:text-primary-500 px-2"
+            class="px-2 toolbar-button hover:text-primary-500"
             @click.stop
           >
             <Icon type="eye" />
@@ -132,7 +121,7 @@
                 viaRelationship: viaRelationship,
               })
             "
-            class="toolbar-button hover:text-primary-500 px-2"
+            class="px-2 toolbar-button hover:text-primary-500"
             @click.stop
           >
             <Icon type="pencil-alt" />
@@ -146,7 +135,7 @@
           :aria-label="__(viaManyToMany ? 'Detach' : 'Delete')"
           :data-testid="`${testId}-delete-button`"
           :dusk="`${resource['id'].value}-delete-button`"
-          class="toolbar-button hover:text-primary-500 px-2"
+          class="px-2 toolbar-button hover:text-primary-500"
           @click.stop="openDeleteModal"
         >
           <Icon type="trash" />
@@ -158,7 +147,7 @@
           v-tooltip.click="__('Restore')"
           :aria-label="__('Restore')"
           :dusk="`${resource['id'].value}-restore-button`"
-          class="toolbar-button hover:text-primary-500 px-2"
+          class="px-2 toolbar-button hover:text-primary-500"
           @click.stop="openRestoreModal"
         >
           <Icon type="refresh" />
@@ -187,18 +176,15 @@
 <script>
 import filter from 'lodash/filter';
 import { Inertia } from '@inertiajs/inertia';
-import ReordersResources from '../mixins/ReordersResources';
 
 export default {
   emits: ['actionExecuted'],
-  mixins: [ReordersResources],
 
   props: [
     'testId',
     'deleteResource',
     'restoreResource',
     'resource',
-    'itemKey',
     'resourcesSelected',
     'resourceName',
     'relationshipType',
@@ -212,6 +198,7 @@ export default {
     'shouldShowCheckboxes',
     'shouldShowColumnBorders',
     'tableStyle',
+    'tableRowClickAction',
     'updateSelectionStatus',
     'queryString',
   ],
@@ -252,6 +239,25 @@ export default {
       }
     },
 
+    resourceClickAction(e) {
+      console.log('resourceClickAction', e, this.tableRowClickAction);
+      if (this.tableRowClickAction === 'update') {
+        return this.navigateToUpdate(e);
+      } else if (this.tableRowClickAction === 'select') {
+        return this.toggleSelection();
+      } else {
+        return this.navigateToDetail(e);
+      }
+    },
+
+    navigateToUpdate(e) {
+      if (!this.resource.authorizedToUpdate) {
+        return;
+      }
+
+      this.commandPressed ? window.open(this.updateURL, '_blank') : Inertia.visit(this.updateURL);
+    },
+
     navigateToDetail(e) {
       if (!this.resource.authorizedToView) {
         return;
@@ -290,6 +296,14 @@ export default {
   computed: {
     viewURL() {
       return this.$url(`/resources/${this.resourceName}/${this.resource.id.value}`);
+    },
+
+    updateURL() {
+      return this.$url(`/resources/${this.resourceName}/${this.resource.id.value}/edit`, {
+        viaResource: this.viaResource,
+        viaResourceId: this.viaResourceId,
+        viaRelationship: this.viaRelationship,
+      });
     },
 
     availableActions() {

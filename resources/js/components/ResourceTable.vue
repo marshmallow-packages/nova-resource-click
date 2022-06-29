@@ -17,19 +17,12 @@
         @order="requestOrderByChange"
         @reset-order-by="resetOrderBy"
       />
-      <draggable
-        tag="tbody"
-        item-key="id"
-        v-model="fakeResources"
-        handle=".handle"
-        draggable="tr"
-        @update="updateOrder"
-      >
+      <tbody>
         <ResourceTableRow
-          v-for="(resource, index) in fakeResources"
-          :key="`${resource.id.value}-items-${index}`"
+          v-for="(resource, index) in resources"
           @actionExecuted="$emit('actionExecuted')"
           :testId="`${resourceName}-items-${index}`"
+          :key="`${resource.id.value}-items-${index}`"
           :delete-resource="deleteResource"
           :restore-resource="restoreResource"
           :resource="resource"
@@ -45,28 +38,21 @@
           :should-show-checkboxes="shouldShowCheckboxes"
           :should-show-column-borders="shouldShowColumnBorders"
           :table-style="tableStyle"
+          :table-row-click-action="tableRowClickAction"
           :update-selection-status="updateSelectionStatus"
-          @moveToStart="moveToStart(resource)"
-          @moveToEnd="moveToEnd(resource)"
         />
-      </draggable>
+      </tbody>
     </table>
   </div>
 </template>
 
 <script>
-import { InteractsWithResourceInformation } from 'laravel-nova-mixins';
-import { VueDraggableNext } from 'vue-draggable-next';
-import ReordersResources from '../mixins/ReordersResources';
+import { InteractsWithResourceInformation } from '@/mixins';
 
 export default {
-  emits: ['actionExecuted', 'updateOrder', 'delete', 'restore', 'order', 'reset-order-by'],
+  emits: ['actionExecuted', 'delete', 'restore', 'order', 'reset-order-by'],
 
-  mixins: [InteractsWithResourceInformation, ReordersResources],
-
-  components: {
-    draggable: VueDraggableNext,
-  },
+  mixins: [InteractsWithResourceInformation],
 
   props: {
     authorizedToRelate: {
@@ -189,12 +175,13 @@ export default {
     tableStyle() {
       return this.resourceInformation.tableStyle;
     },
+
+    /**
+     * Determine the action of the click on the resource table row.
+     */
+    tableRowClickAction() {
+      return this.resourceInformation.tableRowClickAction;
+    },
   },
 };
 </script>
-
-<style>
-.flip-list-move {
-  transition: transform 0.25s;
-}
-</style>
